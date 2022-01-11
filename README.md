@@ -1,4 +1,4 @@
-# "Fair" IMDB Ranking
+# "Fair" IMDB Ranking  [![Pylint](https://github.com/kasztp/FairMDB/actions/workflows/pylint.yml/badge.svg)](https://github.com/kasztp/FairMDB/actions/workflows/pylint.yml)
 
 Web Scraping practice project with BeautifulSoup, Requests, CSV.
 It scrapes the Top 250 Movies from IMDB, then recalculates their ranking based on number of reviews & Oscars won.
