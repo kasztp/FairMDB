@@ -1,4 +1,5 @@
-""" Module to scrape & recalculate IMDB Top250 movie ratings based on number of reviews & Oscars won. """
+""" Module to scrape & recalculate IMDB Top250 movie ratings
+    based on number of reviews & Oscars won. """
 from concurrent.futures import ProcessPoolExecutor
 import csv
 import os
@@ -56,8 +57,8 @@ def scrape_dataset(top_chart_url: str) -> list[list[str]]:
     header = [['Title', 'Ratings', 'Reviews', 'Oscars', 'URL']]
     dataset = header + data
 
-    with open(TEMP_FILE, 'w', encoding='utf-8', newline='') as f:
-        write_temp = csv.writer(f)
+    with open(TEMP_FILE, 'w', encoding='utf-8', newline='') as temp:
+        write_temp = csv.writer(temp)
         write_temp.writerows(dataset)
 
     return dataset
@@ -117,8 +118,8 @@ if __name__ == '__main__':
         temp_dataset = scrape_dataset(TARGET_URL)
     else:
         print(f'Loading dataset from {TEMP_FILE}')
-        with open(TEMP_FILE, 'r', encoding='utf-8', newline='') as f:
-            temp_dataset = list(csv.reader(f))
+        with open(TEMP_FILE, 'r', encoding='utf-8', newline='') as temp_file:
+            temp_dataset = list(csv.reader(temp_file))
 
     print('Recalculating Ratings...')
     updated_dataset = recalculate_ratings(temp_dataset)
