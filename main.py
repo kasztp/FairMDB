@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 import requests
 from tqdm import tqdm
 
-parser = argparse.ArgumentParser(description='Scrape IMDB Top 250 movies. Then recalculate ratings.')
+parser = argparse.ArgumentParser(description='Scrape IMDB Top 250 movies & recalculate ratings.')
 parser.add_argument('-o', '--output', type=str, default='./Fair_IMDB_Ratings_top20.csv',
                     help='Output file name.')
 parser.add_argument('-c', '--cache', type=str, default='./cache.csv',
@@ -29,9 +29,8 @@ MOVIES_TO_SCRAPE = args.movies
 
 def scrape_dataset(top_chart_url: str) -> list[list[str]]:
     """ Function to scrape Top 250 movies dataset from IMDB.com """
-    result = requests.get(top_chart_url)
-    content = result.text
-    soup = BeautifulSoup(content, 'lxml')
+    request_result = requests.get(top_chart_url)
+    soup = BeautifulSoup(request_result.text, 'lxml')
 
     # Parse movie titles
     elements = soup(class_='titleColumn')
@@ -51,7 +50,7 @@ def scrape_dataset(top_chart_url: str) -> list[list[str]]:
     elements = soup.select("tbody a")
     movie_urls = ['https://www.imdb.com' + element['href']
                   for index, element in enumerate(elements) if index % 2 != 0]
-    
+
     # Set up tqdm progress bar
     kwargs = {
         'total': MOVIES_TO_SCRAPE,
@@ -67,14 +66,13 @@ def scrape_dataset(top_chart_url: str) -> list[list[str]]:
         oscars = list(tqdm(executor.map(get_oscars, movie_urls[0:MOVIES_TO_SCRAPE]), **kwargs))
 
     # Prepare temp output & write to CSV
-    data = [list(row) for row in zip(
+    dataset = [list(row) for row in zip(
         titles[0:MOVIES_TO_SCRAPE],
         ratings[0:MOVIES_TO_SCRAPE],
         user_numbers[0:MOVIES_TO_SCRAPE],
         oscars[0:MOVIES_TO_SCRAPE],
         movie_urls[0:MOVIES_TO_SCRAPE])]
-    header = [['Title', 'Ratings', 'Reviews', 'Oscars', 'URL']]
-    dataset = header + data
+    dataset.insert(0, ['Title', 'Ratings', 'Reviews', 'Oscars', 'URL'])
 
     with open(TEMP_FILE, 'w', encoding='utf-8', newline='') as temp:
         write_temp = csv.writer(temp)
@@ -105,13 +103,13 @@ def recalculate_ratings(dataset: list[list[str]]) -> list[list[str]]:
         """ Helper function to modify rating based on the number of Oscars won. """
         if 1 <= wins <= 2:
             return 0.3
-        elif 3 <= wins <= 5:
+        if 3 <= wins <= 5:
             return 0.5
-        elif 5 <= wins <= 10:
+        if 5 <= wins <= 10:
             return 1.0
-        elif 6 <= wins <= 10:
+        if 6 <= wins <= 10:
             return 1.0
-        elif wins > 10:
+        if wins > 10:
             return 1.5
         return 0
 
