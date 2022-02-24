@@ -1,5 +1,6 @@
 """ Module to scrape & recalculate IMDB Top250 movie ratings
     based on number of reviews & Oscars won. """
+import argparse
 from concurrent.futures import ProcessPoolExecutor
 import csv
 import os
@@ -7,10 +8,23 @@ from bs4 import BeautifulSoup
 import requests
 from tqdm import tqdm
 
+parser = argparse.ArgumentParser(description='Scrape IMDB Top 250 movies. Then recalculate ratings.')
+parser.add_argument('-o', '--output', type=str, default='./Fair_IMDB_Ratings_top20.csv',
+                    help='Output file name.')
+parser.add_argument('-c', '--cache', type=str, default='./cache.csv',
+                    help='Cache file name.')
+parser.add_argument('-w', '--max-workers', type=int, default=4,
+                    help='Maximum number of workers to use.')
+parser.add_argument('-m', '--movies', type=int, default=20,
+                    help='Number of movies to scrape.')
+args = parser.parse_args()
+
+
 TARGET_URL = 'https://www.imdb.com/chart/top/'
-OUTPUT_FILE = './Fair_IMDB_Ratings.csv'
-TEMP_FILE = './temp.csv'
-MAX_WORKERS = 32
+OUTPUT_FILE = args.output
+TEMP_FILE = args.cache
+MAX_WORKERS = args.max_workers
+MOVIES_TO_SCRAPE = args.movies
 
 
 def scrape_dataset(top_chart_url: str) -> list[list[str]]:
@@ -37,10 +51,10 @@ def scrape_dataset(top_chart_url: str) -> list[list[str]]:
     elements = soup.select("tbody a")
     movie_urls = ['https://www.imdb.com' + element['href']
                   for index, element in enumerate(elements) if index % 2 != 0]
-
+    
     # Set up tqdm progress bar
     kwargs = {
-        'total': len(movie_urls),
+        'total': MOVIES_TO_SCRAPE,
         'unit': ' movie',
         'unit_scale': True,
         'leave': True
@@ -50,10 +64,15 @@ def scrape_dataset(top_chart_url: str) -> list[list[str]]:
     #   Using multiprocessing instead of multithreading,
     #   as it is about 2-3x faster in this use case. Maybe because of BS4 parsing overhead?
     with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        oscars = list(tqdm(executor.map(get_oscars, movie_urls), **kwargs))
+        oscars = list(tqdm(executor.map(get_oscars, movie_urls[0:MOVIES_TO_SCRAPE]), **kwargs))
 
     # Prepare temp output & write to CSV
-    data = [list(row) for row in zip(titles, ratings, user_numbers, oscars, movie_urls)]
+    data = [list(row) for row in zip(
+        titles[0:MOVIES_TO_SCRAPE],
+        ratings[0:MOVIES_TO_SCRAPE],
+        user_numbers[0:MOVIES_TO_SCRAPE],
+        oscars[0:MOVIES_TO_SCRAPE],
+        movie_urls[0:MOVIES_TO_SCRAPE])]
     header = [['Title', 'Ratings', 'Reviews', 'Oscars', 'URL']]
     dataset = header + data
 
@@ -89,6 +108,8 @@ def recalculate_ratings(dataset: list[list[str]]) -> list[list[str]]:
         elif 3 <= wins <= 5:
             return 0.5
         elif 5 <= wins <= 10:
+            return 1.0
+        elif 6 <= wins <= 10:
             return 1.0
         elif wins > 10:
             return 1.5
