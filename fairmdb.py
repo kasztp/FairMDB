@@ -72,7 +72,7 @@ def scrape_dataset(top_chart_url: str) -> list[list[str]]:
         user_numbers[0:MOVIES_TO_SCRAPE],
         oscars[0:MOVIES_TO_SCRAPE],
         movie_urls[0:MOVIES_TO_SCRAPE])]
-    dataset.insert(0, ['Title', 'Ratings', 'Reviews', 'Oscars', 'URL'])
+    dataset.insert(0, ['Title', 'Original Rating', 'Reviews', 'Oscars', 'URL'])
 
     with open(TEMP_FILE, 'w', encoding='utf-8', newline='') as temp:
         write_temp = csv.writer(temp)
@@ -97,22 +97,23 @@ def get_oscars(movie_url: str) -> int:
     return 0
 
 
+def oscar_calculator(wins: int) -> float:
+    """ Helper function to modify rating based on the number of Oscars won. """
+    if 1 <= wins <= 2:
+        return 0.3
+    if 3 <= wins <= 5:
+        return 0.5
+    if 6 <= wins <= 10:
+        return 1.0
+    if wins > 10:
+        return 1.5
+    return 0
+
+
 def recalculate_ratings(dataset: list[list[str]]) -> list[list[str]]:
     """ Function to recalculate ratings based on number of ratings & Oscars won. """
-    def calculate_oscar_value(wins: int) -> float:
-        """ Helper function to modify rating based on the number of Oscars won. """
-        if 1 <= wins <= 2:
-            return 0.3
-        if 3 <= wins <= 5:
-            return 0.5
-        if 5 <= wins <= 10:
-            return 1.0
-        if 6 <= wins <= 10:
-            return 1.0
-        if wins > 10:
-            return 1.5
-        return 0
-
+ 
+    dataset[0].insert(1, 'Recalculated Rating')
     ratings = [float(row[1]) for row in dataset[1:]]
     reviews = [int(row[2]) for row in dataset[1:]]
     oscars = [int(row[3]) for row in dataset[1:]]
@@ -126,8 +127,8 @@ def recalculate_ratings(dataset: list[list[str]]) -> list[list[str]]:
         if movie[2] != max_reviews:
             rating -= (max_reviews - reviews[row])//100000*0.1
         if movie[3] != 0:
-            rating += calculate_oscar_value(oscars[row])
-        dataset[row+1][1] = str(round(rating, 1))
+            rating += oscar_calculator(oscars[row])
+        dataset[row+1].insert(1, str(round(rating, 1)))
     return dataset
 
 
