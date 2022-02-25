@@ -1,35 +1,34 @@
 """ Module to scrape & recalculate IMDB Top250 movie ratings
     based on number of reviews & Oscars won. """
+
 import argparse
-from concurrent.futures import ProcessPoolExecutor
 import csv
 import os
-from bs4 import BeautifulSoup
+from concurrent.futures import ProcessPoolExecutor
+
 import requests
+from bs4 import BeautifulSoup
 from tqdm import tqdm
 
-parser = argparse.ArgumentParser(description='Scrape IMDB Top 250 movies & recalculate ratings.')
-parser.add_argument('-o', '--output', type=str, default='./Fair_IMDB_Ratings_top20.csv',
-                    help='Output file name.')
-parser.add_argument('-c', '--cache', type=str, default='./cache.csv',
-                    help='Cache file name.')
-parser.add_argument('-w', '--max-workers', type=int, default=4,
-                    help='Maximum number of workers to use.')
-parser.add_argument('-m', '--movies', type=int, default=20,
-                    help='Number of movies to scrape.')
-args = parser.parse_args()
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Scrape IMDB Top 250 movies & recalculate ratings.')
+    parser.add_argument('-o', '--output', type=str, default='./Fair_IMDB_Ratings_top20.csv',
+                        help='Output file name.')
+    parser.add_argument('-t', '--temp', type=str, default='./temp.csv',
+                        help='Temp file name.')
+    parser.add_argument('-w', '--max-workers', type=int, default=4,
+                        help='Maximum number of workers to use.')
+    parser.add_argument('-m', '--movies', type=int, default=20,
+                        help='Number of movies to scrape.')
+    config = parser.parse_args()
+    config.__setattr__('target_url', 'https://www.imdb.com/chart/top/')
+    return config
 
 
-TARGET_URL = 'https://www.imdb.com/chart/top/'
-OUTPUT_FILE = args.output
-TEMP_FILE = args.cache
-MAX_WORKERS = args.max_workers
-MOVIES_TO_SCRAPE = args.movies
-
-
-def scrape_dataset(top_chart_url: str) -> list[list[str]]:
+def scrape_dataset(config: dict) -> list[list[str]]:
     """ Function to scrape Top 250 movies dataset from IMDB.com """
-    request_result = requests.get(top_chart_url)
+    request_result = requests.get(config.target_url)
     soup = BeautifulSoup(request_result.text, 'lxml')
 
     # Parse movie titles
@@ -53,7 +52,7 @@ def scrape_dataset(top_chart_url: str) -> list[list[str]]:
 
     # Set up tqdm progress bar
     kwargs = {
-        'total': MOVIES_TO_SCRAPE,
+        'total': config.movies,
         'unit': ' movie',
         'unit_scale': True,
         'leave': True
@@ -62,19 +61,19 @@ def scrape_dataset(top_chart_url: str) -> list[list[str]]:
     # Get number of Oscars - Note:
     #   Using multiprocessing instead of multithreading,
     #   as it is about 2-3x faster in this use case. Maybe because of BS4 parsing overhead?
-    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        oscars = list(tqdm(executor.map(get_oscars, movie_urls[0:MOVIES_TO_SCRAPE]), **kwargs))
+    with ProcessPoolExecutor(max_workers=config.max_workers) as executor:
+        oscars = list(tqdm(executor.map(get_oscars, movie_urls[0:config.movies]), **kwargs))
 
     # Prepare temp output & write to CSV
     dataset = [list(row) for row in zip(
-        titles[0:MOVIES_TO_SCRAPE],
-        ratings[0:MOVIES_TO_SCRAPE],
-        user_numbers[0:MOVIES_TO_SCRAPE],
-        oscars[0:MOVIES_TO_SCRAPE],
-        movie_urls[0:MOVIES_TO_SCRAPE])]
+        titles[0:config.movies],
+        ratings[0:config.movies],
+        user_numbers[0:config.movies],
+        oscars[0:config.movies],
+        movie_urls[0:config.movies])]
     dataset.insert(0, ['Title', 'Original Rating', 'Reviews', 'Oscars', 'URL'])
 
-    with open(TEMP_FILE, 'w', encoding='utf-8', newline='') as temp:
+    with open(config.temp, 'w', encoding='utf-8', newline='') as temp:
         write_temp = csv.writer(temp)
         write_temp.writerows(dataset)
 
@@ -133,19 +132,21 @@ def recalculate_ratings(dataset: list[list[str]]) -> list[list[str]]:
 
 
 if __name__ == '__main__':
-    if not os.path.isfile(TEMP_FILE):
+    config = parse_args()
+
+    if not os.path.isfile(config.temp):
         print('Getting data from IMDB...')
-        temp_dataset = scrape_dataset(TARGET_URL)
+        temp_dataset = scrape_dataset(config)
     else:
-        print(f'Loading dataset from {TEMP_FILE}')
-        with open(TEMP_FILE, 'r', encoding='utf-8', newline='') as temp_file:
+        print(f'Loading dataset from {config.temp}...')
+        with open(config.temp, 'r', encoding='utf-8', newline='') as temp_file:
             temp_dataset = list(csv.reader(temp_file))
 
     print('Recalculating Ratings...')
     updated_dataset = recalculate_ratings(temp_dataset)
     updated_dataset.sort(key=lambda row: row[1], reverse=True)
 
-    print(f'Writing results to {OUTPUT_FILE}')
-    with open(OUTPUT_FILE, 'w', encoding='utf-8', newline='') as output_file:
+    print(f'Writing results to {config.output}...')
+    with open(config.output, 'w', encoding='utf-8', newline='') as output_file:
         write = csv.writer(output_file)
         write.writerows(updated_dataset)
