@@ -1,3 +1,4 @@
+'''Unit test for recalculate_ratings function.'''
 import csv
 import fairmdb
 

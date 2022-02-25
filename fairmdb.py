@@ -112,7 +112,7 @@ def oscar_calculator(wins: int) -> float:
 
 def recalculate_ratings(dataset: list[list[str]]) -> list[list[str]]:
     """ Function to recalculate ratings based on number of ratings & Oscars won. """
- 
+
     dataset[0].insert(1, 'Recalculated Rating')
     ratings = [float(row[1]) for row in dataset[1:]]
     reviews = [int(row[2]) for row in dataset[1:]]

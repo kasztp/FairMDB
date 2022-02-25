@@ -1,3 +1,4 @@
+'''Unit test for calculate_oscar_value function.'''
 import fairmdb
 
 
