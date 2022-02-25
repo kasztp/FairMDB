@@ -41,15 +41,15 @@ def scrape_dataset(config: dict) -> list[list[str]]:
     #   Using multiprocessing instead of multithreading,
     #   as it is about 2-3x faster in this use case. Maybe because of BS4 parsing overhead?
     with ProcessPoolExecutor(max_workers=config.max_workers) as executor:
-        oscars = list(tqdm(executor.map(get_oscars, movie_urls[0:config.movies]), **kwargs))
+        oscars = list(tqdm(executor.map(get_oscars, movie_urls[:config.movies]), **kwargs))
 
     # Prepare temp output & write to CSV
-    dataset = [list(row) for row in zip(
-        titles[0:config.movies],
-        ratings[0:config.movies],
-        user_numbers[0:config.movies],
-        oscars[0:config.movies],
-        movie_urls[0:config.movies])]
+    dataset = list(zip(
+        titles[:config.movies],
+        ratings[:config.movies],
+        user_numbers[:config.movies],
+        oscars[:config.movies],
+        movie_urls[:config.movies]))
     dataset.insert(0, ['Title', 'Original Rating', 'Reviews', 'Oscars', 'URL'])
 
     return dataset
