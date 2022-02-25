@@ -1,6 +1,6 @@
 '''Unit test for recalculate_ratings function.'''
 import csv
-import fairmdb
+import fairmdb.score_calculator as score_calculator
 
 TEMP_FILE = './tests/test_data/cache.csv'
 EXPECTED_OUTPUT = './tests/test_data/test.csv'
@@ -16,6 +16,6 @@ with open(EXPECTED_OUTPUT, 'r', encoding='utf-8', newline='') as test_file:
 
 def test_recalculation():
     """ Unit test for recalculation function. """
-    test_output = fairmdb.recalculate_ratings(temp_dataset)
+    test_output = score_calculator.recalculate_ratings(temp_dataset)
     test_output.sort(key=lambda row: row[1], reverse=True)
     assert test_dataset == test_output

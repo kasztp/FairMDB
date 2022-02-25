@@ -1,5 +1,5 @@
 '''Unit test for calculate_oscar_value function.'''
-import fairmdb
+from fairmdb.score_calculator import oscar_calculator
 
 
 def test_calculate_oscar_value():
@@ -12,17 +12,15 @@ def test_calculate_oscar_value():
 
     For example: if a movie is awarded 4 Oscar titles and the original IMDB rating is 7.5,
     the adjusted value will increase to 8 points.'''
-    assert fairmdb.oscar_calculator(0) == 0
-    assert fairmdb.oscar_calculator(-1) == 0
-    assert fairmdb.oscar_calculator(1) == 0.3
-    assert fairmdb.oscar_calculator(2) == 0.3
-    assert fairmdb.oscar_calculator(3) == 0.5
-    assert fairmdb.oscar_calculator(4) == 0.5
-    assert fairmdb.oscar_calculator(5) == 0.5
-    assert fairmdb.oscar_calculator(6) == 1.0
-    assert fairmdb.oscar_calculator(7) == 1.0
-    assert fairmdb.oscar_calculator(8) == 1.0
-    assert fairmdb.oscar_calculator(9) == 1.0
-    assert fairmdb.oscar_calculator(10) == 1.0
-    assert fairmdb.oscar_calculator(11) == 1.5
-    assert fairmdb.oscar_calculator(23) == 1.5
+    assert oscar_calculator(0) == 0
+    assert oscar_calculator(-1) == 0
+    assert oscar_calculator(1) == 0.3
+    assert oscar_calculator(2) == 0.3
+    assert oscar_calculator(3) == 0.5
+    assert oscar_calculator(4) == 0.5
+    assert oscar_calculator(5) == 0.5
+    assert oscar_calculator(6) == 1.0
+    assert oscar_calculator(8) == 1.0
+    assert oscar_calculator(10) == 1.0
+    assert oscar_calculator(11) == 1.5
+    assert oscar_calculator(23) == 1.5
