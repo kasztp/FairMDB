@@ -7,5 +7,5 @@ lxml==4.9.1
 requests==2.31.0
 soupsieve==2.3.1
 tqdm==4.62.3
-urllib3==1.26.7
+urllib3==1.26.17
 
